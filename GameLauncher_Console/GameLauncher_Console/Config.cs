@@ -4,6 +4,8 @@ using System.Collections.Generic;
 using System.Configuration;
 using System.Diagnostics;
 using System.Linq;
+using System.Runtime.Versioning;
+
 //using System.Runtime.InteropServices;
 //using System.Text;
 using System.Windows.Forms;
@@ -110,7 +112,10 @@ namespace GameLauncher_Console
 			public ConsoleKey tagsCK2;
 			public ConsoleKey downloadCK1;
 			public ConsoleKey downloadCK2;
+			public ConsoleKey allimgCK1;
+			public ConsoleKey allimgCK2;
 		}
+
 		public struct Colours
         {
 			public ConsoleColor bgCC;
@@ -154,7 +159,10 @@ namespace GameLauncher_Console
 		public const string CFG_USELITE		= "flag_colour_light_mode_is_default";
 		public const string CFG_USEALL		= "flag_always_show_all_games";
 		public const string CFG_NOCFG		= "flag_do_not_show_settings_in_platform_list";			// TODO
-		public const string CFG_INSTONLY	= "flag_do_not_scan_not_installed_games";				// TODO
+		public const string CFG_BASEONLY	= "flag_do_not_scan_dlc";
+		public const string CFG_GAMEONLY	= "flag_do_not_scan_nongame_software";
+		public const string CFG_INSTONLY	= "flag_do_not_scan_not_installed_games";
+		public const string CFG_OWNONLY		= "flag_do_not_scan_unowned_games";
 		public const string CFG_USECUST		= "flag_only_scan_custom_games";
 		public const string CFG_USETEXT		= "flag_text_use_custom_text_values";
 		public const string CFG_IMGBORD		= "flag_image_draw_border_characters";
@@ -167,6 +175,7 @@ namespace GameLauncher_Console
 		public const string CFG_USEEGL		= "flag_use_epic_launcher";
 		public const string CFG_USEGAL		= "flag_use_gog_galaxy_launcher";
 		public const string CFG_USEHUM		= "flag_use_humble_launcher";
+		public const string CFG_USEITC		= "flag_use_itch_launcher";
 		public const string CFG_USELEG		= "flag_use_legendary_for_epic";
 #if DEBUG
 		public const string CFG_UWPLIST		= "list_show_uwp_titles";
@@ -180,6 +189,7 @@ namespace GameLauncher_Console
 		public const string CFG_IMGPOS		= "num_selected_image_y_location_percent";
 		public const string CFG_COLSIZE		= "num_grid_text_min_column_characters";
 		public const string CFG_STEAMID		= "num_steam_id";
+		public const string CFG_STEAMAPI	= "text_steam_apikey";
 		public const string CFG_OCULUSID	= "text_oculus_username";
 		public const string CFG_ORIGINID	= "text_ea_email";
 		public const string CFG_ORIGINPW	= "base64_ea_password";
@@ -273,6 +283,8 @@ namespace GameLauncher_Console
 		public const string CFG_KEYRATEDN2	= "key_rating_down_2";
 		public const string CFG_KEYDLIMG1	= "key_download_image_1";
 		public const string CFG_KEYDLIMG2	= "key_download_image_2";
+		public const string CFG_KEYDLALL1	= "key_download_all_images_1";
+		public const string CFG_KEYDLALL2	= "key_download_all_images_2";
 		public const string CFG_PATHLEG		= "path_legendary_exe";
 		public const string CFG_TXTMAINT	= "text_main_menu_title";
 		public const string CFG_TXTCFGT		= "text_settings_title";
@@ -555,7 +567,8 @@ namespace GameLauncher_Console
 		/// <returns>Value of the translated key or original key if not found</returns>
 		public static string KeyToUSFormat(string strCKeyName)
 		{
-			if (InputLanguage.CurrentInputLanguage.LayoutName == "US")
+			if (OperatingSystem.IsWindowsVersionAtLeast(6, 1) &&
+				InputLanguage.CurrentInputLanguage.LayoutName == "US")
 			{
 				switch (strCKeyName)
 				{
@@ -595,8 +608,12 @@ namespace GameLauncher_Console
 		/// <returns>Value of the translated key or original key if not found</returns>
 		public static string ShortenKeyName(string strCKeyName)
 		{
-			if (InputLanguage.CurrentInputLanguage.LayoutName == "US")
+			if (OperatingSystem.IsWindowsVersionAtLeast(6, 1) &&
+				InputLanguage.CurrentInputLanguage.LayoutName == "US")
+			{
 				strCKeyName = KeyToUSFormat(strCKeyName);
+			}
+
 			switch (strCKeyName)
 			{
 				case "Backspace":

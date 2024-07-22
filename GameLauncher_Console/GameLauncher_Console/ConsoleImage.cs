@@ -64,9 +64,9 @@ namespace GameLauncher_Console
 			void Compare(IShellItem psi, uint hint, out int piOrder);
 		};
 		
-		[ComImportAttribute()]
-		[GuidAttribute("bcc18b79-ba16-442f-80c4-8a59c30c463b")]
-		[InterfaceTypeAttribute(ComInterfaceType.InterfaceIsIUnknown)]
+		[ComImport()]
+		[Guid("bcc18b79-ba16-442f-80c4-8a59c30c463b")]
+		[InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
 		public interface IShellItemImageFactory
 		{
 			void GetImage(
@@ -85,7 +85,7 @@ namespace GameLauncher_Console
 		[DllImport("kernel32.dll", SetLastError = true)]
 		public static extern IntPtr GetConsoleWindow();
 
-		[DllImport("kernel32.dll", SetLastError = true)]
+		[DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
 		public static extern IntPtr CreateFile(
 			string lpFileName,
 			int dwDesiredAccess,
@@ -182,7 +182,7 @@ namespace GameLauncher_Console
 			}
 
 			ConsoleFontInfo cfi = new();
-			if (!GetCurrentConsoleFont(outHandle, false, cfi))
+			if (!GetCurrentConsoleFont(outHandle, bMaximumWindow: false, cfi))
 			{
 				throw new InvalidOperationException("Unable to get font information.");
 			}
@@ -320,7 +320,7 @@ namespace GameLauncher_Console
         public static void ShowImage(int selection, string title, string imgPath, bool bPlatform, Size size, Point location, ConsoleColor? bg)
         {
 			if (bPlatform)
-				title = title.Substring(0, title.LastIndexOf(':'));
+				title = title[..title.LastIndexOf(':')];
 
 			string titleFile = string.Concat(title.Split(Path.GetInvalidFileNameChars()));
 
@@ -549,6 +549,8 @@ namespace GameLauncher_Console
                         icon = new Icon(Properties.Resources._28, res, res);
                     else if (platform.StartsWith(GetPlatformString(29)))
                         icon = new Icon(Properties.Resources._29, res, res);
+                    else if (platform.StartsWith(GetPlatformString(30)))
+                        icon = new Icon(Properties.Resources._30, res, res);
                     else if (platform.Equals(CConfig.GetConfigString(CConfig.CFG_TXTCFGT))) // Settings
                         icon = new Icon(Properties.Resources.settings, res, res);
                     else

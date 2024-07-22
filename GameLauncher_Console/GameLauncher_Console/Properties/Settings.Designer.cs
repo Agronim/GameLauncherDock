@@ -12,7 +12,7 @@ namespace GameLauncher_Console.Properties {
     
     
     [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
-    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.VisualStudio.Editors.SettingsDesigner.SettingsSingleFileGenerator", "17.4.0.0")]
+    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.VisualStudio.Editors.SettingsDesigner.SettingsSingleFileGenerator", "17.8.0.0")]
     internal sealed partial class Settings : global::System.Configuration.ApplicationSettingsBase {
         
         private static Settings defaultInstance = ((Settings)(global::System.Configuration.ApplicationSettingsBase.Synchronized(new Settings())));
@@ -229,6 +229,30 @@ namespace GameLauncher_Console.Properties {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        public bool flag_do_not_scan_dlc {
+            get {
+                return ((bool)(this["flag_do_not_scan_dlc"]));
+            }
+            set {
+                this["flag_do_not_scan_dlc"] = value;
+            }
+        }
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        public bool flag_do_not_scan_nongame_software {
+            get {
+                return ((bool)(this["flag_do_not_scan_nongame_software"]));
+            }
+            set {
+                this["flag_do_not_scan_nongame_software"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("False")]
         public bool flag_do_not_scan_not_installed_games {
             get {
@@ -236,6 +260,18 @@ namespace GameLauncher_Console.Properties {
             }
             set {
                 this["flag_do_not_scan_not_installed_games"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        public bool flag_do_not_scan_unowned_games {
+            get {
+                return ((bool)(this["flag_do_not_scan_unowned_games"]));
+            }
+            set {
+                this["flag_do_not_scan_unowned_games"] = value;
             }
         }
         
@@ -385,6 +421,18 @@ namespace GameLauncher_Console.Properties {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        public bool flag_use_itch_launcher {
+            get {
+                return ((bool)(this["flag_use_itch_launcher"]));
+            }
+            set {
+                this["flag_use_itch_launcher"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("False")]
         public bool flag_use_legendary_for_epic {
             get {
@@ -502,6 +550,18 @@ namespace GameLauncher_Console.Properties {
             }
             set {
                 this["num_steam_id"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string text_steam_apikey {
+            get {
+                return ((string)(this["text_steam_apikey"]));
+            }
+            set {
+                this["text_steam_apikey"] = value;
             }
         }
         

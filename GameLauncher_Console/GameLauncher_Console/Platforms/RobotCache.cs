@@ -1,6 +1,5 @@
-﻿using GameCollector.StoreHandlers.Rockstar;
+﻿using GameCollector.StoreHandlers.RobotCache;
 using GameFinder.Common;
-using GameFinder.RegistryUtils;
 using Logger;
 using System;
 using System.Collections.Generic;
@@ -11,13 +10,14 @@ using FileSystem = NexusMods.Paths.FileSystem;
 
 namespace GameLauncher_Console
 {
-	// Rockstar Games Launcher
+	// RobotCache games
 	// [installed games only]
-	public class PlatformRockstar : IPlatform
+	public class PlatformRobotCache : IPlatform
 	{
-		public const GamePlatform ENUM			= GamePlatform.Rockstar;
-		public const string PROTOCOL			= "rockstar://";
-		private static readonly string _name = Enum.GetName(typeof(GamePlatform), ENUM);
+		public const GamePlatform ENUM			= GamePlatform.RobotCache;
+		public const string PROTOCOL			= "robotcache://";
+
+        private static readonly string _name = Enum.GetName(typeof(GamePlatform), ENUM);
 
 		GamePlatform IPlatform.Enum => ENUM;
 
@@ -58,7 +58,7 @@ namespace GameLauncher_Console
 		{
             string strPlatform = GetPlatformString(ENUM);
 
-            RockstarHandler handler = new(WindowsRegistry.Shared, FileSystem.Shared);
+            RobotCacheHandler handler = new(FileSystem.Shared);
             foreach (var game in handler.FindAllGames(settings))
             {
                 if (game.IsT0)
@@ -73,36 +73,8 @@ namespace GameLauncher_Console
 			CLogger.LogDebug("------------------------");
 		}
 
-        public static string GetIconUrl(CGame game)
-        {
-            return GetIconUrl(GetGameID(game.ID), game.Title);
-        }
+		public static string GetIconUrl(CGame _) => throw new NotImplementedException();
 
-        public static string GetIconUrl(string id, string title)
-        {
-            if (string.IsNullOrEmpty(title))
-                return "";
-
-			id = id.ToLower();
-			if (id.EndsWith("_pc"))
-				id = id[..id.LastIndexOf("_pc")];
-
-            if (id.Equals("gtaiii"))
-				id = "gta3";
-            else if (id.Equals("gta5"))
-				id = "gtav";
-			else if (id.Equals("lanoire"))
-				id = "lan";
-
-            if (id.Equals("gta3") || id.Equals("gtasa") || id.Equals("gtavc"))
-                id += "unreal";
-
-            //id should be (as of 2022/12/15) one of: "bully", "gta3unreal", "gtavcunreal", "gtasaunreal", "gtaiv", "gtav", "lan", "lanvr", "mp3", "rdr2"
-            string iconUrl = string.Format("https://s.rsg.sc/sc/images/react/games/boxart/{0}.jpg", id);
-
-            return iconUrl;
-        }
-
-        public static string GetGameID(string key) => key;
+		public static string GetGameID(string key) => key;
 	}
 }

@@ -1,12 +1,14 @@
-﻿using Logger;
+﻿using GameFinder.Common;
+using Logger;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Diagnostics;
+using System.Globalization;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Text;
+using System.Text.Json;
 
 namespace GameLauncher_Console
 {
@@ -78,13 +80,15 @@ namespace GameLauncher_Console
 			Legacy = 26,
 			[Description("Riot Client")]
 			Riot = 27,
-            [Description("Game Jolt Client")]
-            GameJolt = 28,
-            [Description("Humble App")]
-            Humble = 29,
-            [Description("Miscellaneous")]
-            Misc = 30
-        }
+			[Description("Game Jolt Client")]
+			GameJolt = 28,
+			[Description("Humble App")]
+			Humble = 29,
+			[Description("RobotCache")]
+			RobotCache = 30,
+			//[Description("Miscellaneous")]
+			//Misc = 31,
+		}
 
 		public enum Match
 		{
@@ -107,14 +111,14 @@ namespace GameLauncher_Console
 		}
 
 		public struct Sorter
-        {
+		{
 			public CConsoleHelper.SortMethod method;
 			public string columnName;
 			public bool isAscending;
-        }
+		}
 
-		public static readonly List<string> _articles = new()
-		{
+		public static readonly List<string> _articles =
+		[
 			"The ",								// English definite
 			"A ", "An "							// English indefinite
 			/*
@@ -125,45 +129,15 @@ namespace GameLauncher_Console
 			"Der", "Das",						//, "Die" [English word] // German definite
 			"Ein", "Eine"						// German indefinite
 			*/
-        };
+		];
 
 		/// <summary>
 		/// Collect data from the registry or filesystem
 		/// </summary>
-		public struct ImportGameData
+		public struct ImportGameData(string strPlatform, GameData gameData)
 		{
-			public string m_strID;
-			public string m_strTitle;
-			public string m_strLaunch;
-			public string m_strIcon;
-			public string m_strUninstall;
-			public string m_strAlias;
-			public bool m_bInstalled;
-			public string m_strPlatform;
-			public bool m_bFavourite;
-			public bool m_bHidden;
-			public List<string> m_tags;
-			public DateTime m_dateLastRun;
-			public ushort m_rating;
-			public uint m_numRuns;
-
-			public ImportGameData(string strID, string strTitle, string strLaunch, string strIconPath, string strUninstall, string strAlias, bool bInstalled, string strPlatform, bool bFavourite = false, bool bHidden = false, List<string> tags = default, DateTime dateLastRun = default, ushort rating = 0, uint numRuns = 0)
-			{
-				m_strID = strID;
-				m_strTitle = strTitle;
-				m_strLaunch = strLaunch;
-				m_strIcon = strIconPath;
-				m_strUninstall = strUninstall;
-				m_strAlias = strAlias;
-				m_bInstalled = bInstalled;
-				m_strPlatform = strPlatform;
-				m_bFavourite = bFavourite;
-				m_bHidden = bHidden;
-				m_tags = tags ?? new List<string>();
-                m_dateLastRun = dateLastRun;
-				m_rating = rating;
-				m_numRuns = numRuns;
-			}
+			public string m_strPlatform = strPlatform;
+			public GameData m_gameData = gameData;
 		}
 
 		/// <summary>
@@ -174,7 +148,9 @@ namespace GameLauncher_Console
 			private readonly string m_strID;
 			private readonly string m_strTitle;
 			private readonly string m_strLaunch;
+			private readonly string m_strLaunchUrl;
 			private readonly string m_strIcon;
+			private readonly string m_strIconUrl;
 			private readonly string m_strUninstall;
 			private bool m_bIsInstalled;
 			private bool m_bIsFavourite;
@@ -194,7 +170,9 @@ namespace GameLauncher_Console
 			/// <param name="strID">Unique ID for the game</param>
 			/// <param name="strTitle">Title of the game</param>
 			/// <param name="strLaunch">Game's launch command</param>
+			/// <param name="strLaunchUrl">Game's launch command via launcher</param>
 			/// <param name="strIconPath">Path to game's icon</param>
+			/// <param name="strIconUrl">Game's downloadable icon</param>
 			/// <param name="strUninstall">Path to game's uninstaller</param>
 			/// <param name="bIsInstalled">Flag indicating if the game is installed</param>
 			/// <param name="bIsFavourite">Flag indicating if the game is in the favourite tab</param>
@@ -207,12 +185,14 @@ namespace GameLauncher_Console
 			/// <param name="rating">User rating (0-5)</param>
 			/// <param name="numRuns">Number of game launches</param>
 			/// <param name="fOccurCount">Game's frequency counter</param>
-			protected CGame(string strID, string strTitle, string strLaunch, string strIconPath, string strUninstall, bool bIsInstalled, bool bIsFavourite, bool bIsNew, bool bIsHidden, string strAlias, GamePlatform platformEnum, List<string> tags, DateTime dateLastRun, ushort rating, uint numRuns, double fOccurCount)
+			protected CGame(string strID, string strTitle, string strLaunch, string strLaunchUrl, string strIconPath, string strIconUrl, string strUninstall, bool bIsInstalled, bool bIsFavourite, bool bIsNew, bool bIsHidden, string strAlias, GamePlatform platformEnum, List<string> tags, DateTime dateLastRun, ushort rating, uint numRuns, double fOccurCount)
 			{
 				m_strID = strID;
 				m_strTitle = strTitle;
 				m_strLaunch = strLaunch;
+				m_strLaunchUrl = strLaunchUrl;
 				m_strIcon = strIconPath;
+				m_strIconUrl = strIconUrl;
 				m_strUninstall = strUninstall;
 				m_bIsInstalled = bIsInstalled;
 				m_bIsFavourite = bIsFavourite;
@@ -281,6 +261,17 @@ namespace GameLauncher_Console
 			}
 
 			/// <summary>
+			/// Launch url getter
+			/// </summary>
+			public string LaunchUrl
+			{
+				get
+				{
+					return m_strLaunchUrl;
+				}
+			}
+
+			/// <summary>
 			/// Icon getter
 			/// </summary>
 			public string Icon
@@ -288,6 +279,17 @@ namespace GameLauncher_Console
 				get
 				{
 					return m_strIcon;
+				}
+			}
+
+			/// <summary>
+			/// Downloadable icon getter
+			/// </summary>
+			public string IconUrl
+			{
+				get
+				{
+					return m_strIconUrl;
 				}
 			}
 
@@ -422,9 +424,9 @@ namespace GameLauncher_Console
 			}
 
 			public void ClearTags()
-            {
-				m_tags = new List<string>();
-            }
+			{
+				m_tags = [];
+			}
 
 			/// <summary>
 			/// LastRunDate getter
@@ -455,7 +457,7 @@ namespace GameLauncher_Console
 					return m_rating;
 				}
 				set
-                {
+				{
 					if (value >= 0 && value <= 5)
 						m_rating = value;
 				}
@@ -553,7 +555,9 @@ namespace GameLauncher_Console
 			/// <param name="strID">Unique ID of the game</param>
 			/// <param name="strTitle">Title of the game</param>
 			/// <param name="strLaunch">Game's launch command</param>
+			/// <param name="strLaunchUrl">Game's launch command via launcher</param>
 			/// <param name="strIconPath">Path to game's icon</param>
+			/// <param name="strIconUrl">Game's downloadable icon</param>
 			/// <param name="strUninstall">Path to game's uninstaller</param>
 			/// <param name="bIsInstalled">Flag indicating if the game is installed</param>
 			/// <param name="bIsFavourite">Flag indicating if the game is in the favourite tab</param>
@@ -566,8 +570,8 @@ namespace GameLauncher_Console
 			/// <param name="rating">User rating (0-5)</param>
 			/// <param name="numRuns">Number of game launches</param>
 			/// <param name="fOccurCount">Game's frequency counter</param>
-			public CGameInstance(string strID, string strTitle, string strLaunch, string strIconPath, string strUninstall, bool bIsInstalled, bool bIsFavourite, bool bIsNew, bool bIsHidden, string strAlias, GamePlatform platformEnum, List<string> tags, DateTime dateLastRun, ushort rating, uint numRuns, double fOccurCount)
-				: base(strID, strTitle, strLaunch, strIconPath, strUninstall, bIsInstalled, bIsFavourite, bIsNew, bIsHidden, strAlias, platformEnum, tags, dateLastRun, rating, numRuns, fOccurCount)
+			public CGameInstance(string strID, string strTitle, string strLaunch, string strLaunchUrl, string strIconPath, string strIconUrl, string strUninstall, bool bIsInstalled, bool bIsFavourite, bool bIsNew, bool bIsHidden, string strAlias, GamePlatform platformEnum, List<string> tags, DateTime dateLastRun, ushort rating, uint numRuns, double fOccurCount)
+				: base(strID, strTitle, strLaunch, strLaunchUrl, strIconPath, strIconUrl, strUninstall, bIsInstalled, bIsFavourite, bIsNew, bIsHidden, strAlias, platformEnum, tags, dateLastRun, rating, numRuns, fOccurCount)
 			{
 
 			}
@@ -593,7 +597,9 @@ namespace GameLauncher_Console
 			/// <param name="strID">Game unique ID</param>
 			/// <param name="strTitle">Game title</param>
 			/// <param name="strLaunch">Game launch command</param>
+			/// <param name="strLaunchUrl">Game launch command via launcher</param>
 			/// <param name="strIconPath">Path to game's icon</param>
+			/// <param name="strIconUrl">Game downloadable icon</param>
 			/// <param name="strUninstall">Path to game's uninstaller</param>
 			/// <param name="bIsInstalled">Flag indicating if the game is installed</param>
 			/// <param name="bIsFavourite">Flag indicating if the game is in the favourite tab</param>
@@ -606,16 +612,16 @@ namespace GameLauncher_Console
 			/// <param name="rating">User rating (0-5)</param>
 			/// <param name="numRuns">Number of game launches</param>
 			/// <param name="fOccurCount">Game's frequency counter</param>
-			public void InsertGame(string strID, string strTitle, string strLaunch, string strIconPath, string strUninstall, bool bIsInstalled, bool bIsFavourite, bool bIsNew, bool bIsHidden, string strAlias, string strPlatform, List<string> tags, DateTime dateLastRun, ushort rating, uint numRuns, double fOccurCount)
+			public void InsertGame(string strID, string strTitle, string strLaunch, string strLaunchUrl, string strIconPath, string strIconUrl, string strUninstall, bool bIsInstalled, bool bIsFavourite, bool bIsNew, bool bIsHidden, string strAlias, string strPlatform, List<string> tags, DateTime dateLastRun, ushort rating, uint numRuns, double fOccurCount)
 			{
 				GamePlatform platformEnum;
 				// If platform is incorrect or unsupported, default to unknown.
-				//if (!Enum.TryParse(strPlatform, true, out GamePlatform platformEnum))
+				//if (!Enum.TryParse(strPlatform, ignoreCase: true, out GamePlatform platformEnum))
 				platformEnum = (GamePlatform)GetPlatformEnum(strPlatform);
 				if (platformEnum < 0)
 					platformEnum = GamePlatform.Unknown;
 
-				this.Add(CreateGameInstance(strID, strTitle, strLaunch, strIconPath, strUninstall, bIsInstalled, bIsFavourite, bIsNew, bIsHidden, strAlias, platformEnum, tags, dateLastRun, rating, numRuns, fOccurCount));
+				this.Add(CreateGameInstance(strID, strTitle, strLaunch, strLaunchUrl, strIconPath, strIconUrl, strUninstall, bIsInstalled, bIsFavourite, bIsNew, bIsHidden, strAlias, platformEnum, tags, dateLastRun, rating, numRuns, fOccurCount));
 			}
 		}
 
@@ -625,7 +631,9 @@ namespace GameLauncher_Console
 		/// <param name="strID">Unique ID of the game</param>
 		/// <param name="strTitle">Title of the game</param>
 		/// <param name="strLaunch">Game's launch command</param>
+		/// <param name="strLaunchUrl">Game's launch command via launcher</param>
 		/// <param name="strIconPath">Path to game's icon</param>
+		/// <param name="strIconUrl">Game's downloadable icon</param>
 		/// <param name="strUninstall">Path to game's uninstaller</param>
 		/// <param name="bIsInstalled">Flag indicating if the game is installed</param>
 		/// <param name="bIsFavourite">Flag indicating if the game is in the favourite tab</param>
@@ -639,18 +647,18 @@ namespace GameLauncher_Console
 		/// <param name="numRuns">Number of game launches</param>
 		/// <param name="fOccurCount">Game's frequency counter</param>
 		/// <returns>Instance of CGame</returns>
-		private static CGame CreateGameInstance(string strID, string strTitle, string strLaunch, string strIconPath, string strUninstall, bool bIsInstalled, bool bIsFavourite, bool bIsNew, bool bIsHidden, string strAlias, GamePlatform platformEnum, List<string> tags, DateTime dateLastRun, ushort rating, uint numRuns, double fOccurCount)
+		private static CGame CreateGameInstance(string strID, string strTitle, string strLaunch, string strLaunchUrl, string strIconPath, string strIconUrl, string strUninstall, bool bIsInstalled, bool bIsFavourite, bool bIsNew, bool bIsHidden, string strAlias, GamePlatform platformEnum, List<string> tags, DateTime dateLastRun, ushort rating, uint numRuns, double fOccurCount)
 		{
-			return new CGameInstance(strID, strTitle, strLaunch, strIconPath, strUninstall, bIsInstalled, bIsFavourite, bIsNew, bIsHidden, strAlias, platformEnum, tags, dateLastRun, rating, numRuns, fOccurCount);
+			return new CGameInstance(strID, strTitle, strLaunch, strLaunchUrl, strIconPath, strIconUrl, strUninstall, bIsInstalled, bIsFavourite, bIsNew, bIsHidden, strAlias, platformEnum, tags, dateLastRun, rating, numRuns, fOccurCount);
 		}
 
-		private static readonly Dictionary<GamePlatform, HashSet<CGame>> m_gameDictionary = new();
-		private static HashSet<CGame> m_searchResults = new();
-		private static HashSet<CGame> m_favourites = new();
-		private static HashSet<CGame> m_newGames = new();
-		private static HashSet<CGame> m_allGames = new();
-		private static HashSet<CGame> m_hidden = new();
-		private static HashSet<CGame> m_notInstalled = new();
+		private static readonly Dictionary<GamePlatform, HashSet<CGame>> m_gameDictionary = [];
+		private static HashSet<CGame> m_searchResults = [];
+		private static HashSet<CGame> m_favourites = [];
+		private static HashSet<CGame> m_newGames = [];
+		private static HashSet<CGame> m_allGames = [];
+		private static HashSet<CGame> m_hidden = [];
+		private static HashSet<CGame> m_notInstalled = [];
 
 		/// <summary>
 		/// Return the list of Game objects with specified platform
@@ -678,7 +686,12 @@ namespace GameLauncher_Console
 				return m_notInstalled;
 
 			else
-				return m_gameDictionary[platformEnum];
+			{
+				if (m_gameDictionary.TryGetValue(platformEnum, out HashSet<CGame> value))
+					return value;
+				else
+					return [];
+			}
 		}
 
 		/// <summary>
@@ -721,21 +734,6 @@ namespace GameLauncher_Console
 		public static string GetPlatformString(GamePlatform value)
 		{
 			return GetDescription(value);
-			/*
-			Type type = value.GetType();
-			string name = Enum.GetName(type, value);
-			if (name != null)
-			{
-				FieldInfo field = type.GetField(name);
-				if (field != null && Attribute.GetCustomAttribute(field,
-					typeof(DescriptionAttribute)) is DescriptionAttribute attr)
-				{
-					return attr.Description;
-				}
-				return name;
-			}
-			return "";
-			*/
 		}
 
 		/// <summary>
@@ -763,7 +761,7 @@ namespace GameLauncher_Console
 			{
 				CLogger.LogError(e);
 			}
-			if (Enum.TryParse(strPlatformName, true, out GamePlatform platformEnum))
+			if (Enum.TryParse(strPlatformName, ignoreCase: true, out GamePlatform platformEnum))
 				return (int)platformEnum;
 			return -1;
 		}
@@ -776,7 +774,7 @@ namespace GameLauncher_Console
 		/// <returns>GamePlatform enumerator, cast to int type. -1 on failed resolution</returns>
 		public static int GetPlatformEnum(string strPlatformName, bool bStripStr)
 		{
-			if (bStripStr) strPlatformName = strPlatformName.Contains(":") ? strPlatformName.Substring(0, strPlatformName.IndexOf(':')) : strPlatformName;
+			if (bStripStr) strPlatformName = strPlatformName.Contains(':') ? strPlatformName[..strPlatformName.IndexOf(':')] : strPlatformName;
 			return GetPlatformEnum(strPlatformName);
 		}
 
@@ -787,7 +785,7 @@ namespace GameLauncher_Console
 		public static Dictionary<string, int> GetPlatforms()
 		{
 			Dictionary<string, int> platformDict = new()
-            {
+			{
 				{ GetPlatformString(GamePlatform.Search), m_searchResults.Count },
 				{ GetPlatformString(GamePlatform.Favourites), m_favourites.Count },
 				{ GetPlatformString(GamePlatform.New), m_newGames.Count },
@@ -811,7 +809,7 @@ namespace GameLauncher_Console
 		/// <returns>List of strings</returns>
 		public static List<string> GetPlatformTitles(GamePlatform platformEnum)
 		{
-			List<string> platformTitles = new();
+			List<string> platformTitles = [];
 
 			if (platformEnum == GamePlatform.Search)
 			{
@@ -884,9 +882,9 @@ namespace GameLauncher_Console
 						platformTitles.Add(strTitle);
 				}
 			}
-			else if (m_gameDictionary.ContainsKey(platformEnum))
+			else if (m_gameDictionary.TryGetValue(platformEnum, out HashSet<CGame> value))
 			{
-				foreach (CGame game in m_gameDictionary[platformEnum])
+				foreach (CGame game in value)
 				{
 					string strTitle = game.Title;
 					if (game.IsFavourite)
@@ -907,7 +905,9 @@ namespace GameLauncher_Console
 		/// <param name="strID">Unique ID of the game</param>
 		/// <param name="strTitle">Title of the game</param>
 		/// <param name="strLaunch">Game's launch command</param>
+		/// <param name="strLaunchUrl">Game's launch command via launcher</param>
 		/// <param name="strIconPath">Path to game's icon</param>
+		/// <param name="strIconUrl">Game's downloadable icon</param>
 		/// <param name="strUninstall">Path to game's uninstaller</param>
 		/// <param name="bIsInstalled">Flag indicating if the game is installed</param>
 		/// <param name="bIsFavourite">Flag indicating if the game is in the favourite tab</param>
@@ -920,20 +920,20 @@ namespace GameLauncher_Console
 		/// <param name="rating">User rating (0-5)</param>
 		/// <param name="numRuns">Number of game launches</param>
 		/// <param name="fOccurCount">Game's frequency counter</param>
-		public static void AddGame(string strID, string strTitle, string strLaunch, string strIconPath, string strUninstall, bool bIsInstalled, bool bIsFavourite, bool bIsNew, bool bIsHidden, string strAlias, string strPlatform, List<string> tags, DateTime dateLastRun, ushort rating, uint numRuns, double fOccurCount)
+		public static void AddGame(string strID, string strTitle, string strLaunch, string strLaunchUrl, string strIconPath, string strIconUrl, string strUninstall, bool bIsInstalled, bool bIsFavourite, bool bIsNew, bool bIsHidden, string strAlias, string strPlatform, List<string> tags, DateTime dateLastRun, ushort rating, uint numRuns, double fOccurCount)
 		{
 			GamePlatform platformEnum;
 			// If platform is incorrect or unsupported, default to unknown.
-			//if (!Enum.TryParse(strPlatform, true, out GamePlatform platformEnum))
+			//if (!Enum.TryParse(strPlatform, ignoreCase: true, out GamePlatform platformEnum))
 			platformEnum = (GamePlatform)GetPlatformEnum(strPlatform);
 			if (platformEnum < 0)
 				platformEnum = GamePlatform.Unknown;
 
 			// If this is the first entry in the key, we need to initialise the list
 			if (!m_gameDictionary.ContainsKey(platformEnum))
-				m_gameDictionary[platformEnum] = new HashSet<CGame>();
+				m_gameDictionary[platformEnum] = [];
 
-			CGame game = CreateGameInstance(strID, strTitle, strLaunch, strIconPath, strUninstall, bIsInstalled, bIsFavourite, bIsNew, bIsHidden, strAlias, platformEnum, tags, dateLastRun, rating, numRuns, fOccurCount);
+			CGame game = CreateGameInstance(strID, strTitle, strLaunch, strLaunchUrl, strIconPath, strIconUrl, strUninstall, bIsInstalled, bIsFavourite, bIsNew, bIsHidden, strAlias, platformEnum, tags, dateLastRun, rating, numRuns, fOccurCount);
 			m_gameDictionary[platformEnum].Add(game);
 
 			if (game.IsFavourite)
@@ -961,7 +961,7 @@ namespace GameLauncher_Console
 			if (game != null)
 			{
 				if (!m_gameDictionary.ContainsKey(game.Platform))
-					m_gameDictionary[game.Platform] = new HashSet<CGame>();
+					m_gameDictionary[game.Platform] = [];
 
 				m_gameDictionary[game.Platform].Add(game);
 
@@ -1114,7 +1114,7 @@ namespace GameLauncher_Console
 		}
 
 		public static void ClearNewGames()
-        {
+		{
 			m_newGames.Clear();
 			foreach (CGame game in m_allGames)
 			{
@@ -1189,11 +1189,11 @@ namespace GameLauncher_Console
 				SortGameSet(ref temp, sortMethod, faveSort, instSort, ignoreArticle);
 				m_gameDictionary[pair.Key] = temp;
 			}
-			SortGameSet(ref m_favourites, sortMethod, false, instSort, ignoreArticle);
+			SortGameSet(ref m_favourites, sortMethod, faveSort: false, instSort, ignoreArticle);
 			SortGameSet(ref m_newGames, sortMethod, faveSort, instSort, ignoreArticle);
 			SortGameSet(ref m_allGames, sortMethod, faveSort, instSort, ignoreArticle);
 			SortGameSet(ref m_hidden, sortMethod, faveSort, instSort, ignoreArticle);
-			SortGameSet(ref m_notInstalled, sortMethod, faveSort, false, ignoreArticle);
+			SortGameSet(ref m_notInstalled, sortMethod, faveSort, instSort: false, ignoreArticle);
 		}
 
 		/// <summary>
@@ -1204,12 +1204,13 @@ namespace GameLauncher_Console
 		{
 			List<string> articles = _articles;
 			if (ignoreArticle)
-				articles = new List<string>() { };
+				articles = [];
 
-			List<Sorter> sortBy = new();
-
-			// Always start with alphabetic sort
-			sortBy.Add(new Sorter { method = CConsoleHelper.SortMethod.cSort_Alpha, columnName = "Title", isAscending = true });
+			List<Sorter> sortBy =
+			[
+				// Always start with alphabetic sort
+				new Sorter { method = CConsoleHelper.SortMethod.cSort_Alpha, columnName = "Title", isAscending = true },
+			];
 
 			// Rating, Frequency, or LastRunDate
 			if (sortMethod == CConsoleHelper.SortMethod.cSort_Rating)
@@ -1291,7 +1292,7 @@ namespace GameLauncher_Console
 								  new Type[] { source.AsQueryable().ElementType, property.Type },
 								  source.AsQueryable().Expression, Expression.Quote(lambda));
 
-			return source.AsQueryable().Provider.CreateQuery<T>(methodCallExpression).ToHashSet<T>();
+			return [.. source.AsQueryable().Provider.CreateQuery<T>(methodCallExpression)];
 		}
 
 		/// <summary>
@@ -1306,7 +1307,7 @@ namespace GameLauncher_Console
 				FieldInfo field = source.GetType().GetField(source.ToString());
 
 				DescriptionAttribute[] attr = (DescriptionAttribute[])field.GetCustomAttributes(
-					typeof(DescriptionAttribute), false);
+					typeof(DescriptionAttribute), inherit: false);
 
 				if (attr != null && attr.Length > 0) return attr[0].Description;
 			}
@@ -1350,40 +1351,40 @@ namespace GameLauncher_Console
 
 			// truncate if necessary
 			if (alias.Length > maxLength)
-				return alias.Substring(0, maxLength);
+				return alias[..maxLength];
 			return alias;
 		}
 
-        /// <summary>
-        /// Remove Unicode characters from a string
-        /// </summary>
-        /// <param name="s">A string</param>
-        /// <returns>simplified string</returns>
-        public static string StripUnicode(string s)
-        {
-            StringBuilder sb = new(s.Length);
-            foreach (char c in s)
-            {
-                if (c >= 127)
-                    continue;
-                if (c < 32)
-                    continue;
-                if (c == '%')
-                    continue;
-                if (c == '?')
-                    continue;
-                sb.Append(c);
-            }
+		/// <summary>
+		/// Remove Unicode characters from a string
+		/// </summary>
+		/// <param name="s">A string</param>
+		/// <returns>simplified string</returns>
+		public static string StripUnicode(string s)
+		{
+			StringBuilder sb = new(s.Length);
+			foreach (char c in s)
+			{
+				if (c >= 127)
+					continue;
+				if (c < 32)
+					continue;
+				if (c == '%')
+					continue;
+				if (c == '?')
+					continue;
+				sb.Append(c);
+			}
 
-            return sb.ToString();
-        }
+			return sb.ToString();
+		}
 
-        /// <summary>
-        /// Return set of games from a fuzzy match
-        /// </summary>
-        /// <returns>dictionary of titles with confidence levels</returns>
-        /// <param name="match">String to match</param>
-        public static Dictionary<string, int> FindMatchingTitles(string match)
+		/// <summary>
+		/// Return set of games from a fuzzy match
+		/// </summary>
+		/// <returns>dictionary of titles with confidence levels</returns>
+		/// <param name="match">String to match</param>
+		public static Dictionary<string, int> FindMatchingTitles(string match)
 		{
 			return FindMatchingTitles(match, 0);
 		}
@@ -1395,20 +1396,20 @@ namespace GameLauncher_Console
 		/// <param name="match">String to match</param>
 		public static Dictionary<string, int> FindMatchingTitles(string match, int max)
 		{
-			Dictionary<string, int> outDict = new();
+			Dictionary<string, int> outDict = [];
 			int i = 0;
 			m_searchResults.Clear();
 			match = match.ToLower();
 			foreach (CGame game in m_allGames)
 			{
-				string fullTitle = game.Title.StartsWith("*") ? game.Title[1..] : game.Title;
-				fullTitle = fullTitle.EndsWith(" [F]") || fullTitle.EndsWith(" [H]") ? fullTitle.ToLower().Substring(0, fullTitle.Length - 4) : fullTitle.ToLower();
+				string fullTitle = game.Title.StartsWith('*') ? game.Title[1..] : game.Title;
+				fullTitle = fullTitle.EndsWith(" [F]") || fullTitle.EndsWith(" [H]") ? fullTitle.ToLower()[..(fullTitle.Length - 4)] : fullTitle.ToLower();
 				string shortTitle = fullTitle;
 				/*
 				foreach (string prep in new List<string> { "for", "of", "to" })
 				{
 					if (shortTitle.StartsWith(prep + " "))
-						shortTitle = shortTitle.Substring(prep.Length + 1);
+						shortTitle = shortTitle[(prep.Length + 1)..];
 				}
 				*/
 				foreach (string art in _articles)
@@ -1421,7 +1422,7 @@ namespace GameLauncher_Console
 				{
 					i++;
 					m_searchResults.Add(game);
-					outDict.Add(game.Title, (int)Match.ExactTitle);     // full confidence
+					outDict.Add(game.Title, (int)Match.ExactTitle);		// full confidence
 					if (max > 0 && i >= max) break;
 				}
 				else if (game.Alias.Equals(match) ||
@@ -1429,7 +1430,7 @@ namespace GameLauncher_Console
 				{
 					i++;
 					m_searchResults.Add(game);
-					outDict.Add(game.Title, (int)Match.ExactAlias);     // very high confidence
+					outDict.Add(game.Title, (int)Match.ExactAlias);		// very high confidence
 					if (max > 0 && i >= max) break;
 				}
 				else if (shortTitle.StartsWith(match) ||
@@ -1437,14 +1438,14 @@ namespace GameLauncher_Console
 				{
 					i++;
 					m_searchResults.Add(game);
-					outDict.Add(game.Title, (int)Match.BeginTitle);     // medium confidence
+					outDict.Add(game.Title, (int)Match.BeginTitle);		// medium confidence
 					if (max > 0 && i >= max) break;
 				}
 				else if (game.Alias.StartsWith(match))
 				{
 					i++;
 					m_searchResults.Add(game);
-					outDict.Add(game.Title, (int)Match.BeginAlias);     // medium confidence
+					outDict.Add(game.Title, (int)Match.BeginAlias);		// medium confidence
 					if (max > 0 && i >= max) break;
 				}
 				else if ((fullTitle.Contains("- ") &&
@@ -1457,7 +1458,7 @@ namespace GameLauncher_Console
 					outDict.Add(game.Title, (int)Match.BeginSubtitle);  // low confidence
 					if (max > 0 && i >= max) break;
 				}
-				else if (fullTitle.Contains(" ") &&
+				else if (fullTitle.Contains(' ') &&
 					fullTitle[fullTitle.LastIndexOf(' ')..].StartsWith(match))
 				{
 					i++;
@@ -1465,7 +1466,7 @@ namespace GameLauncher_Console
 					outDict.Add(game.Title, (int)Match.BeginLastWord);  // low confidence
 					if (max > 0 && i >= max) break;
 				}
-				else if (fullTitle.Contains(" ") &&
+				else if (fullTitle.Contains(' ') &&
 					fullTitle.Contains(" " + match))
 				{
 					i++;
@@ -1484,12 +1485,12 @@ namespace GameLauncher_Console
 		/// <returns>Hashset of CGames</returns>
 		public static HashSet<CGame> MatchGame(string match)
 		{
-			HashSet<CGame> outSet = new();
+			HashSet<CGame> outSet = [];
 			match = match.ToLower();
 			foreach (CGame game in m_allGames)
 			{
-				string fullTitle = game.Title.StartsWith("*") ? game.Title[1..] : game.Title;
-				fullTitle = fullTitle.EndsWith(" [F]") || fullTitle.EndsWith(" [H]") ? fullTitle.ToLower().Substring(0, fullTitle.Length - 4) : fullTitle.ToLower();
+				string fullTitle = game.Title.StartsWith('*') ? game.Title[1..] : game.Title;
+				fullTitle = fullTitle.EndsWith(" [F]") || fullTitle.EndsWith(" [H]") ? fullTitle.ToLower()[..(fullTitle.Length - 4)] : fullTitle.ToLower();
 				string shortTitle = fullTitle;
 				/*
 				foreach (string prep in new List<string> { "for", "of", "to" })
@@ -1506,7 +1507,7 @@ namespace GameLauncher_Console
 				if (game.Alias.StartsWith(match) ||
 					shortTitle.StartsWith(match) ||
 					fullTitle.StartsWith(match) ||
-					(fullTitle.Contains(" ") &&
+					(fullTitle.Contains(' ') &&
 						fullTitle[fullTitle.LastIndexOf(' ')..].StartsWith(match)))  // match last word
 				{
 					outSet.Add(game);

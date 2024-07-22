@@ -53,8 +53,17 @@
     <Setting Name="flag_do_not_show_settings_in_platform_list" Type="System.Boolean" Scope="User">
       <Value Profile="(Default)">True</Value>
     </Setting>
+    <Setting Name="flag_do_not_scan_dlc" Type="System.Boolean" Scope="User">
+      <Value Profile="(Default)">True</Value>
+    </Setting>
+    <Setting Name="flag_do_not_scan_nongame_software" Type="System.Boolean" Scope="User">
+      <Value Profile="(Default)">True</Value>
+    </Setting>
     <Setting Name="flag_do_not_scan_not_installed_games" Type="System.Boolean" Scope="User">
       <Value Profile="(Default)">False</Value>
+    </Setting>
+    <Setting Name="flag_do_not_scan_unowned_games" Type="System.Boolean" Scope="User">
+      <Value Profile="(Default)">True</Value>
     </Setting>
     <Setting Name="flag_only_scan_custom_games" Type="System.Boolean" Scope="User">
       <Value Profile="(Default)">False</Value>
@@ -92,6 +101,9 @@
     <Setting Name="flag_use_humble_launcher" Type="System.Boolean" Scope="User">
       <Value Profile="(Default)">True</Value>
 	</Setting>
+    <Setting Name="flag_use_itch_launcher" Type="System.Boolean" Scope="User">
+      <Value Profile="(Default)">True</Value>
+	</Setting>
     <Setting Name="flag_use_legendary_for_epic" Type="System.Boolean" Scope="User">
       <Value Profile="(Default)">False</Value>
     </Setting>
@@ -121,6 +133,9 @@
     </Setting>
     <Setting Name="num_steam_id" Type="System.Int32" Scope="User">
       <Value Profile="(Default)">0</Value>
+    </Setting>
+    <Setting Name="text_steam_apikey" Type="System.String" Scope="User">
+      <Value Profile="(Default)"></Value>
     </Setting>
     <Setting Name="text_oculus_username" Type="System.String" Scope="User">
       <Value Profile="(Default)"></Value>

@@ -16,6 +16,7 @@ This is a simple Windows console program that will scan the system for video gam
 - Paradox Launcher;
 - Plarium Play;
 - Riot Client;
+- RobotCache;
 - Rockstar Games Launcher;
 - Steam;
 - Ubisoft Connect [formerly Uplay];
@@ -51,9 +52,9 @@ An interactive console allows the user to navigate via menus using the arrows an
 ## Using
 ***[Click here to download the latest binary release.](../../releases/latest/download/glc.exe)*** The app is portable (does not require installation). However, we'd recommend moving it to a dedicated folder before running it because several support files and folders are automatically created in the same location.
 
-The .NET 7 Windows x86 runtime is required. You can [download it here](https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/runtime-desktop-7.0.0-windows-x86-installer), or using the command line run: `winget install Microsoft.DotNet.DesktopRuntime.7`
+The .NET 8 Windows x64 runtime is required. You can [download it here](https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/runtime-desktop-8.0.7-windows-x64-installer), or using the command line run: `winget install Microsoft.DotNet.DesktopRuntime.8`
 
-To change the default configuration options, you can edit glc.ini in v1.2 (or glc-cfg.json in v1.1), including custom keys, colours, text, input, layout, sorting, images, etc.
+To change the default configuration options, you can edit glc.ini in v1.2+ (or glc-cfg.json in v1.1), including custom keys, colours, text, input, layout, sorting, images, etc.
 
 To manually add programs, place file shortcuts or .exe executables in the ".\CustomGames" folder found in the same directory as the application, and use the rescan feature to load them into the program. It is recommended to use shortcuts instead of executables, as .exe files often require external assets and therefore may not work properly.
 
@@ -64,10 +65,11 @@ Legendary is supported as an alternative to the Epic Games Launcher. [Download l
 ## Building from source
 After cloning the repo, use the Publish feature in Visual Studio (right-click the GameLauncher_Console project and choose Publish), or run: `dotnet publish --configuration Release`
 
-The program uses following NuGet packages:
-- [HtmlAgilityPack](https://html-agility-pack.net/) for HTML parsing (Steam non-installed games);
-- [protobuf-net](https://protobuf-net.github.io/protobuf-net/) for database parsing (Battle.net);
-- [PureOrigin.API](https://github.com/JaydenMaalouf/PureOrigin.API) for the EA API;
+[TODO: Add .pubxml to repo]
+
+The program uses some third-party NuGet packages, including:
+- [GameCollector](https://github.com/Nutzzz/GameCollector) to find the games;
+- [HtmlAgilityPack](https://html-agility-pack.net/) for HTML parsing (to download icons);
 - [System.Data.SQLite](https://system.data.sqlite.org/index.html/doc/trunk/www/index.wiki) for database parsing (v2 game database, Amazon, GOG, itch, Oculus).
 
 ## Contributing
